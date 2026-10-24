@@ -20,6 +20,32 @@ function setupSimulationModal() {
   closeBtn.addEventListener("click", () => modal.classList.add("hidden"));
   cancelBtn.addEventListener("click", () => modal.classList.add("hidden"));
 
+  const presetSelect = document.getElementById("sim-preset");
+  const districtSelect = document.getElementById("sim-district");
+  const syndromeSelect = document.getElementById("sim-syndrome");
+
+  if (presetSelect) {
+    presetSelect.addEventListener("change", (e) => {
+      const val = e.target.value;
+      if (val === "dengue") {
+        districtSelect.value = "Pune";
+        syndromeSelect.value = "SYN-VBD";
+        spikeSlider.value = 320;
+        spikeVal.innerText = "+320%";
+      } else if (val === "cholera") {
+        districtSelect.value = "Nashik";
+        syndromeSelect.value = "SYN-ADD";
+        spikeSlider.value = 420;
+        spikeVal.innerText = "+420%";
+      } else if (val === "flu") {
+        districtSelect.value = "Nagpur";
+        syndromeSelect.value = "SYN-ARI";
+        spikeSlider.value = 260;
+        spikeVal.innerText = "+260%";
+      }
+    });
+  }
+
   spikeSlider.addEventListener("input", (e) => {
     spikeVal.innerText = `+${e.target.value}%`;
   });

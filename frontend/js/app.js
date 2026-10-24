@@ -144,6 +144,27 @@ function setupEventListeners() {
     refreshTrends();
     refreshMap();
   });
+
+  const dispatchBtn = document.getElementById("dispatch-rrt-btn");
+  if (dispatchBtn) {
+    dispatchBtn.addEventListener("click", async () => {
+      dispatchBtn.disabled = true;
+      dispatchBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Dispatching...`;
+      try {
+        const res = await fetch(`${API_BASE}/alerts/dispatch?district_name=${encodeURIComponent(currentDistrict)}&syndrome_id=${encodeURIComponent(currentSyndrome)}`, {
+          method: "POST"
+        });
+        if (!res.ok) throw new Error("Dispatch failed");
+        const data = await res.json();
+        alert(`🚨 [MoHFW-IDSP ADVISORY DISPATCHED]\n\nRef ID: ${data.dispatch_id}\nDistrict: ${data.district_name}\nSyndrome: ${data.syndrome_name}\nAlert Level: ${data.alert_level} (Z=${data.z_score})\n\nChannels: ${data.channels.join(", ")}\n\nAction Protocol:\n${data.action_protocol.join("\n")}`);
+      } catch (err) {
+        alert("Error dispatching advisory: " + err.message);
+      } finally {
+        dispatchBtn.disabled = false;
+        dispatchBtn.innerHTML = `<i class="fa-solid fa-paper-plane text-[10px] mr-1"></i> <span>Dispatch RRT Advisory</span>`;
+      }
+    });
+  }
 }
 
 async function refreshAllData() {
