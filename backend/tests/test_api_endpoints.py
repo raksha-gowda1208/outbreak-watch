@@ -60,3 +60,22 @@ def test_simulation_injection():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "OUTBREAK_INJECTED"
+
+def test_export_fhir_endpoint():
+    response = client.get("/api/export/fhir?district_name=Pune&syndrome_id=SYN-ADD")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["resourceType"] == "Bundle"
+    assert data["type"] == "collection"
+    assert len(data["entry"]) > 0
+    first_obs = data["entry"][0]["resource"]
+    assert first_obs["resourceType"] == "Observation"
+
+def test_export_geojson_endpoint():
+    response = client.get("/api/export/geojson")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["type"] == "FeatureCollection"
+    assert len(data["features"]) == 5
+    assert data["features"][0]["geometry"]["type"] == "Point"
+

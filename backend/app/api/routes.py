@@ -11,6 +11,8 @@ from typing import List, Optional
 from app.models.schemas import OutbreakInjectionRequest, PrivacyConfigRequest
 from app.privacy.engine import PrivacyEngine
 from app.engine.detector import AberrationDetector
+from app.integrations.fhir_exporter import FHIRExporter
+from app.integrations.geojson_exporter import GeoJSONExporter
 
 router = APIRouter()
 
@@ -252,3 +254,31 @@ def update_privacy_config(payload: PrivacyConfigRequest):
         "new_epsilon": privacy_engine.epsilon,
         "new_k_threshold": privacy_engine.k_threshold
     }
+
+@router.get("/export/fhir")
+def export_fhir_bundle(
+    district_name: Optional[str] = Query("Pune", description="District for FHIR export"),
+    syndrome_id: Optional[str] = Query("SYN-ADD", description="Syndrome ID")
+):
+    """
+    Exports anonymized syndromic observations formatted as an ABDM-compliant
+    HL7-FHIR R4 Bundle.
+    """
+    matching_records = [
+        r for r in DATA_STORE["records"]
+        if r["district_name"].lower() == district_name.lower() and r["syndrome_id"] == syndrome_id
+    ]
+    if not matching_records:
+        raise HTTPException(status_code=404, detail="No matching records found for FHIR export")
+
+    return FHIRExporter.generate_fhir_bundle(matching_records, district_name)
+
+@router.get("/export/geojson")
+def export_geojson(syndrome_id: Optional[str] = Query(None)):
+    """
+    Exports active district hotspots as a standard RFC 7946 GeoJSON FeatureCollection
+    for state GIS portals and disaster response mapping.
+    """
+    hotspots = get_map_hotspots(syndrome_id=syndrome_id)
+    return GeoJSONExporter.generate_geojson(hotspots)
+
