@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OutbreakWatch - Community Symptom Trend Intelligence</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-teal-500 selection:text-white">
+
+  <!-- Top Announcement Bar -->
+  <div class="bg-gradient-to-r from-teal-900 via-indigo-950 to-slate-900 border-b border-teal-800/40 px-4 py-2 text-xs flex justify-between items-center text-teal-200">
+    <div class="flex items-center space-x-2">
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+        ● LIVE SURVEILLANCE
+      </span>
+      <span>National Health Intelligence Matrix | MoHFW IDSP-IHIP Protocol Node 03-05</span>
+    </div>
+    <div class="flex items-center space-x-4">
+      <span id="privacy-badge" class="bg-indigo-950 border border-indigo-700/60 px-2 py-0.5 rounded text-indigo-300">
+        <i class="fa-solid fa-shield-halved text-teal-400 mr-1"></i> Differential Privacy: &epsilon; = 1.0 (Active)
+      </span>
+      <span id="clock" class="text-slate-400"></span>
+    </div>
+  </div>
+
+  <!-- Main Navigation Header -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-6 py-3.5 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+        <i class="fa-solid fa-virus-covid text-slate-950 text-xl font-bold"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-lg font-bold tracking-tight text-white">OutbreakWatch</h1>
+          <span class="text-xs bg-slate-800 text-teal-400 px-2 py-0.5 rounded border border-slate-700 font-mono">v1.0-MoHFW</span>
+        </div>
+        <p class="text-xs text-slate-400">Community Symptom Trend Dashboard &amp; Aberration Triage</p>
+      </div>
+    </div>
+
+    <!-- Quick Action / Demo Controls -->
+    <div class="flex items-center space-x-3">
+      <button id="open-privacy-modal" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-lock text-indigo-400"></i>
+        <span>Privacy Safeguards</span>
+      </button>
+
+      <button id="open-simulate-modal" class="text-xs bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-medium px-4 py-2 rounded-lg shadow-md shadow-red-950/40 transition flex items-center space-x-2">
+        <i class="fa-solid fa-bolt text-yellow-300"></i>
+        <span>Simulate Outbreak (Chaos Demo)</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Key Metric Summary Cards -->
+  <section class="px-6 pt-5 pb-2 grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+      <div>
+        <p class="text-xs text-slate-400 font-medium">Monitored Districts</p>
+        <p class="text-2xl font-bold text-white mt-1">5 <span class="text-xs text-slate-500 font-normal">(MH Pilot)</span></p>
+      </div>
+      <div class="w-10 h-10 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
+        <i class="fa-solid fa-map-location-dot"></i>
+      </div>
+    </div>
+
+    <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+      <div>
+        <p class="text-xs text-slate-400 font-medium">Active Aberrations (EARS-C2)</p>
+        <p id="kpi-anomalies" class="text-2xl font-bold text-amber-400 mt-1">Loading...</p>
+      </div>
+      <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+    </div>
+
+    <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+      <div>
+        <p class="text-xs text-slate-400 font-medium">Surveillance Population</p>
+        <p class="text-2xl font-bold text-indigo-300 mt-1">37.6 M <span class="text-xs text-slate-500 font-normal">synthetic</span></p>
+      </div>
+      <div class="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+        <i class="fa-solid fa-users"></i>
+      </div>
+    </div>
+
+    <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+      <div>
+        <p class="text-xs text-slate-400 font-medium">Privacy Defense Level</p>
+        <p class="text-2xl font-bold text-teal-400 mt-1">k &ge; 5 <span class="text-xs text-slate-500 font-normal">+ &epsilon;-DP</span></p>
+      </div>
+      <div class="w-10 h-10 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter Selector Toolbar -->
+  <section class="px-6 py-2 flex flex-wrap items-center justify-between gap-3 bg-slate-950">
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2">
+        <label class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-location-dot text-teal-400 mr-1"></i>District:</label>
+        <select id="district-select" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-teal-500">
+          <option value="Pune" selected>Pune (High Activity)</option>
+          <option value="Mumbai Suburban">Mumbai Suburban</option>
+          <option value="Nashik">Nashik</option>
+          <option value="Thane">Thane</option>
+          <option value="Nagpur">Nagpur</option>
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <label class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-notes-medical text-rose-400 mr-1"></i>Syndrome:</label>
+        <select id="syndrome-select" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-teal-500">
+          <option value="SYN-ADD" selected>Acute Diarrheal Disease (Cholera/Gastro)</option>
+          <option value="SYN-VBD">Vector-Borne / High Fever (Dengue/Malaria)</option>
+          <option value="SYN-ARI">Acute Respiratory Infection (Flu/COVID)</option>
+          <option value="SYN-FWR">Fever with Rash (Measles suspect)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Live Status Indicators -->
+    <div class="flex items-center space-x-2 text-xs">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+      <span class="text-slate-400">Normal (&lt;2&sigma;)</span>
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 ml-2"></span>
+      <span class="text-slate-400">Elevated (2-3&sigma;)</span>
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 ml-2"></span>
+      <span class="text-slate-400">Critical (&ge;3&sigma;)</span>
+    </div>
+  </section>
+
+  <!-- Main Intelligence Grid -->
+  <main class="flex-1 px-6 py-3 grid grid-cols-1 lg:grid-cols-12 gap-5">
+    
+    <!-- Left Column: Map & Time Series Analytics (7 Columns) -->
+    <div class="lg:col-span-7 flex flex-col space-y-4">
+      
+      <!-- Geospatial Cluster Map -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden flex flex-col shadow-lg">
+        <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/90">
+          <h2 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+            <i class="fa-solid fa-earth-asia text-teal-400"></i>
+            <span>Geospatial Outbreak Density &amp; Cluster Surveillance</span>
+          </h2>
+          <span class="text-xs text-slate-400">Interactive Hotspot View</span>
+        </div>
+        <div id="map-container" class="h-72 w-full z-10 bg-slate-950"></div>
+      </div>
+
+      <!-- Time Series Trend Chart -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 flex-1 flex flex-col shadow-lg">
+        <div class="flex justify-between items-center mb-3">
+          <div>
+            <h2 id="chart-title" class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+              <i class="fa-solid fa-chart-line text-teal-400"></i>
+              <span>Syndromic Trajectory &amp; Early OTC Pharmacy Signal</span>
+            </h2>
+            <p class="text-xs text-slate-400">Comparing PHC Consultations with OTC Antipyretic/ORS Surges</p>
+          </div>
+          <div class="text-xs bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700 text-teal-300 font-mono">
+            Algorithm: CDC EARS-C2
+          </div>
+        </div>
+        <div class="relative flex-1 min-h-[260px]">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Active Anomaly Feeds & CMO Triaging (5 Columns) -->
+    <div class="lg:col-span-5 flex flex-col space-y-4">
+      
+      <!-- Current Outbreak Advisory Card -->
+      <div id="advisory-card" class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-lg transition-all">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center space-x-2">
+            <span id="advisory-badge" class="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              ELEVATED
+            </span>
+            <h3 id="advisory-district" class="text-sm font-bold text-white">Pune Surveillance Report</h3>
+          </div>
+          <span id="advisory-z" class="text-xs font-mono text-slate-400">Z-Score: +2.85</span>
+        </div>
+
+        <div class="mt-3 text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-lg border border-slate-800/80" id="advisory-recommendation">
+          Loading epidemiological assessment...
+        </div>
+
+        <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <div class="bg-slate-800/40 p-2 rounded border border-slate-800">
+            <p class="text-slate-400">Lead Indicator (OTC):</p>
+            <p id="advisory-otc" class="font-semibold text-slate-200 mt-0.5">Detecting...</p>
+          </div>
+          <div class="bg-slate-800/40 p-2 rounded border border-slate-800">
+            <p class="text-slate-400">CUSUM Shift:</p>
+            <p id="advisory-cusum" class="font-semibold text-slate-200 mt-0.5">Detecting...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Active Anomalies Feed List -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl flex-1 flex flex-col shadow-lg overflow-hidden">
+        <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/90">
+          <h2 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+            <i class="fa-solid fa-bell text-rose-400"></i>
+            <span>Active Outbreak Alerts Feed</span>
+          </h2>
+          <span class="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-300" id="alerts-count-badge">0 Alerts</span>
+        </div>
+
+        <div id="anomalies-list" class="p-3 overflow-y-auto space-y-2.5 max-h-[380px] divide-y divide-slate-800/50">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal: Live Outbreak Simulator (Chaos Injector) -->
+  <div id="simulate-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative">
+      <button id="close-simulate-modal" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Live Outbreak Simulator (Chaos Injector)</h3>
+          <p class="text-xs text-slate-400">Demonstrate real-time anomaly detection to evaluators.</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Target District:</label>
+          <select id="sim-district" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-slate-200">
+            <option value="Pune">Pune</option>
+            <option value="Mumbai Suburban">Mumbai Suburban</option>
+            <option value="Nashik">Nashik</option>
+            <option value="Thane">Thane</option>
+            <option value="Nagpur">Nagpur</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Syndrome to Induce:</label>
+          <select id="sim-syndrome" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-slate-200">
+            <option value="SYN-ADD">Acute Diarrheal Disease (Cholera contamination scenario)</option>
+            <option value="SYN-VBD">Vector-Borne (Dengue / Post-monsoon surge)</option>
+            <option value="SYN-ARI">Acute Respiratory Infection (Viral wave)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Surge Magnitude (% above normal baseline):</label>
+          <div class="flex items-center space-x-3">
+            <input type="range" id="sim-spike" min="100" max="500" step="50" value="300" class="flex-1 accent-rose-500">
+            <span id="sim-spike-val" class="font-mono text-rose-400 font-bold text-sm w-16 text-right">+300%</span>
+          </div>
+        </div>
+
+        <div class="bg-red-500/10 border border-red-500/20 p-3 rounded-lg text-slate-300">
+          <p class="font-semibold text-red-400 mb-0.5"><i class="fa-solid fa-circle-exclamation mr-1"></i>Simulated Effect:</p>
+          This will inject a synthetic spike into the recent timeline, triggering the CDC EARS-C2 algorithm to trip the Z-score alarm ($Z > 3.0$) and dispatch a mock Rapid Response Team notification.
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end space-x-3">
+        <button id="cancel-sim-btn" class="px-4 py-2 text-xs rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Cancel</button>
+        <button id="execute-sim-btn" class="px-5 py-2 text-xs rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold shadow-lg shadow-rose-900/50 transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-radiation"></i>
+          <span>Inject Outbreak Scenario</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Mathematical Privacy Safeguards -->
+  <div id="privacy-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative">
+      <button id="close-privacy-modal" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Privacy Preservation &amp; Anonymization</h3>
+          <p class="text-xs text-slate-400">Formal mathematical privacy parameters (MoHFW Compliance).</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <div class="bg-slate-950/80 p-3 rounded-lg border border-slate-800 space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">k-Anonymity Cell Threshold:</span>
+            <span class="font-bold text-teal-400">k &ge; 5 (Counts &lt;5 suppressed)</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">Privacy Mechanism:</span>
+            <span class="font-bold text-indigo-400">Laplace Mechanism (&epsilon;-DP)</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">PII De-identification:</span>
+            <span class="font-bold text-emerald-400">100% Stripped at Source</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Adjust Differential Privacy Budget (&epsilon;):</label>
+          <div class="flex items-center space-x-3">
+            <input type="range" id="epsilon-slider" min="0.2" max="2.0" step="0.1" value="1.0" class="flex-1 accent-indigo-500">
+            <span id="epsilon-val" class="font-mono text-indigo-400 font-bold text-sm w-12 text-right">&epsilon;=1.0</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">Lower &epsilon; = stronger mathematical privacy (more noise). Higher &epsilon; = higher analytical fidelity.</p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button id="apply-privacy-btn" class="px-5 py-2 text-xs rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition">
+          Apply Privacy Configuration
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-900 px-6 py-3 text-xs text-slate-500 flex justify-between items-center bg-slate-950">
+    <p>National Level Hackathon 2026 | MoHFW Healthcare &amp; Biotech Track (IC26-03-05)</p>
+    <p>Built for District Health Surveillance Officers &amp; Integrated Disease Surveillance Programme (IDSP)</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/simulation.js"></script>
+</body>
+</html>
