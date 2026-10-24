@@ -1,0 +1,62 @@
+"""
+Integration tests for FastAPI REST Endpoints
+"""
+
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+def test_health_endpoint():
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert "total_records" in data
+
+def test_districts_endpoint():
+    response = client.get("/api/districts")
+    assert response.status_code == 200
+    districts = response.json()
+    assert len(districts) == 5
+    assert any(d["name"] == "Pune" for d in districts)
+
+def test_syndromes_endpoint():
+    response = client.get("/api/syndromes")
+    assert response.status_code == 200
+    syndromes = response.json()
+    assert len(syndromes) == 4
+
+def test_trends_endpoint():
+    response = client.get("/api/trends?district_name=Pune&syndrome_id=SYN-ADD")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["district_name"] == "Pune"
+    assert "analysis" in data
+    assert "series" in data
+    assert len(data["series"]) > 0
+
+def test_anomalies_endpoint():
+    response = client.get("/api/anomalies")
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_active_anomalies" in data
+    assert "anomalies" in data
+
+def test_map_hotspots_endpoint():
+    response = client.get("/api/map/hotspots")
+    assert response.status_code == 200
+    hotspots = response.json()
+    assert len(hotspots) == 5
+
+def test_simulation_injection():
+    payload = {
+        "district_name": "Nashik",
+        "syndrome_id": "SYN-VBD",
+        "spike_percentage": 250,
+        "days_duration": 3
+    }
+    response = client.post("/api/simulate/inject", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "OUTBREAK_INJECTED"
