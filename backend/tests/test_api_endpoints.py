@@ -79,3 +79,19 @@ def test_export_geojson_endpoint():
     assert len(data["features"]) == 5
     assert data["features"][0]["geometry"]["type"] == "Point"
 
+def test_alert_dispatch_endpoint():
+    response = client.post("/api/alerts/dispatch?district_name=Pune&syndrome_id=SYN-ADD")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "DISPATCHED"
+    assert "dispatch_id" in data
+    assert len(data["action_protocol"]) > 0
+
+def test_alert_history_endpoint():
+    response = client.get("/api/alerts/history")
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_dispatched" in data
+    assert data["total_dispatched"] >= 1
+
+

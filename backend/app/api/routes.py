@@ -13,6 +13,7 @@ from app.privacy.engine import PrivacyEngine
 from app.engine.detector import AberrationDetector
 from app.integrations.fhir_exporter import FHIRExporter
 from app.integrations.geojson_exporter import GeoJSONExporter
+from app.notifications.dispatcher import dispatcher
 
 router = APIRouter()
 
@@ -281,4 +282,34 @@ def export_geojson(syndrome_id: Optional[str] = Query(None)):
     """
     hotspots = get_map_hotspots(syndrome_id=syndrome_id)
     return GeoJSONExporter.generate_geojson(hotspots)
+
+@router.post("/alerts/dispatch")
+def dispatch_alert(
+    district_name: str = Query("Pune", description="District for alert"),
+    syndrome_id: str = Query("SYN-ADD", description="Syndrome ID"),
+    recipient_role: Optional[str] = Query("District Surveillance Officer", description="Recipient role")
+):
+    """
+    Triggers an automated multi-channel Rapid Response Team advisory dispatch
+    for an elevated or critical aberration.
+    """
+    matching_records = [
+        r for r in DATA_STORE["records"]
+        if r["district_name"].lower() == district_name.lower() and r["syndrome_id"] == syndrome_id
+    ]
+    if not matching_records:
+        raise HTTPException(status_code=404, detail="No matching records found")
+        
+    analysis = detector_engine.evaluate_time_series(sorted(matching_records, key=lambda x: x["date"]))
+    dispatch_payload = dispatcher.generate_dispatch_payload(analysis, recipient_role=recipient_role)
+    return dispatch_payload
+
+@router.get("/alerts/history")
+def get_alert_history():
+    """Returns the historical log of all dispatched surveillance advisories."""
+    return {
+        "total_dispatched": len(dispatcher.get_history()),
+        "history": dispatcher.get_history()
+    }
+
 
