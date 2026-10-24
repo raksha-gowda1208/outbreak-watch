@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  outbreak-watch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: outbreak-watch-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DEFAULT_EPSILON=1.0
+      - K_THRESHOLD=5
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
