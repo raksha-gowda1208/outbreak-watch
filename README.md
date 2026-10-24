@@ -175,4 +175,4 @@ outbreak-watch/
 * **Hackathon:** Innovators Conclave 2026 - The Innovation Matrix
 * **Domain:** Domain 03 - Healthcare & Biotech
 * **Problem Statement:** `IC26-03-05` (OutbreakWatch)
-* **Team:** *Innovators Team*
+* **Team:** *QuadCore*

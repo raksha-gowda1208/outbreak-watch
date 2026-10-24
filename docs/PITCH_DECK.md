@@ -7,6 +7,7 @@
 * **Header:** OutbreakWatch
 * **Subtitle:** Privacy-Preserving Community Symptom Trend Intelligence & Outbreak Aberration Detector
 * **Target:** Ministry of Health & Family Welfare (MoHFW) | Integrated Disease Surveillance Programme (IDSP)
+* **Team:** **QuadCore**
 * **Pillars:** Multi-Source Triangulation • CDC EARS-C2 Math • $\epsilon$-Differential Privacy
 
 ---
